@@ -1,0 +1,8 @@
+Makefile.PL
+MANIFEST
+README
+t/Music-NeoRiemannianTonnetz.t
+lib/Music/NeoRiemannianTonnetz.pm
+LICENSE t/pod.t
+META.yml                                 Module YAML meta-data (added by MakeMaker)
+META.json                                Module JSON meta-data (added by MakeMaker)

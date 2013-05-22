@@ -1,0 +1,27 @@
+Music::NeoRiemannianTonnetz - performs Neo-Riemann operations on triads
+
+To install this module, use CPAN, for example:
+
+  cpanm Music::NeoRiemannianTonnetz
+
+For the current release, see:
+
+http://github.com/thrig/Music-NeoRiemannianTonnetz
+
+which can be installed by cloning that directory then running `cpanm .`
+therein.
+
+DEPENDENCIES
+
+Some knowledge of music theory will likely benefit the user, for this
+module, in particular:
+
+https://en.wikipedia.org/wiki/Neo-Riemannian_theory
+
+COPYRIGHT AND LICENCE
+
+Copyright (C) 2013 by Jeremy Mates
+
+This library is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself, either Perl version 5.16 or, at
+your option, any later version of Perl 5 you may have available.
