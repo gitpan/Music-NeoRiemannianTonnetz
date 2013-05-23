@@ -1,5 +1,5 @@
 ---
-abstract: 'performs Neo-Riemann operations on triads'
+abstract: 'performs Neo-Riemann operations on set classes'
 author:
   - 'Jeremy Mates <jmates@cpan.org>'
 build_requires:
@@ -27,4 +27,4 @@ resources:
   homepage: http://github.com/thrig/Music-NeoRiemannianTonnetz
   license: http://dev.perl.org/licenses/
   repository: http://github.com/thrig/Music-NeoRiemannianTonnetz
-version: 0.10
+version: 0.20

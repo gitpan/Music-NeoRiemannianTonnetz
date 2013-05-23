@@ -1,6 +1,6 @@
 # -*- Perl -*-
 #
-# Performs Neo-Riemann operations on triads:
+# Performs Neo-Riemann operations on set classes.
 # https://en.wikipedia.org/wiki/Neo-Riemannian_theory
 
 package Music::NeoRiemannianTonnetz;
@@ -14,24 +14,42 @@ use List::Util qw/min/;
 use Scalar::Util qw/reftype/;
 use Try::Tiny;
 
-our $VERSION = '0.10';
+our $VERSION = '0.20';
 
 my $DEG_IN_SCALE = 12;
 
 # for transform table, 'x'. "SEE ALSO" section in docs has links for [refs]
 my %TRANSFORMATIONS = (
+  # 3-11 operations
   P => \&_x_parallel,          # Parallel [WP]
   R => \&_x_relative,          # Relative [WP]
   L => \&_x_leittonwechsel,    # Leittonwechsel [WP]
   N => 'RLP',                  # Nebenverwandt [WP]
   S => 'LPR',                  # Slide [WP]
   H => 'LPL',                  # [WP]
+
+  # 4-27 operations [Childs 1998]
+  S23 => \&_x_427_S23,
+  S32 => \&_x_427_S32,
+  S34 => \&_x_427_S34,
+  S43 => \&_x_427_S43,
+  S56 => \&_x_427_S56,
+  S65 => \&_x_427_S65,
+  C32 => \&_x_427_C32,
+  C34 => \&_x_427_C34,
+  C65 => \&_x_427_C65,
 );
 
 ########################################################################
 #
 # SUBROUTINES
 
+# These are ugly; there might be a better way to perform the operations,
+# or a more abstract module could instead ignore the operations, and
+# given a pitch set show the various other pitch sets it could mutate
+# directly to?
+
+# 3-11 operations
 sub _x_leittonwechsel {
   my ( $pset_str, $pset2orig ) = @_;
   my @new_set;
@@ -128,6 +146,289 @@ sub _x_relative {
   return \@new_set;
 }
 
+# 4-27 operations
+sub _x_427_S23 {
+  my ( $pset_str, $pset2orig ) = @_;
+  my @new_set;
+
+  if ( $pset_str eq '0,3,6,8' ) {
+    for my $i ( keys %$pset2orig ) {
+      if ( $i == 0 or $i == 3 ) {
+        push @new_set, map { $_ - 1 } @{ $pset2orig->{$i} };
+      } else {
+        push @new_set, @{ $pset2orig->{$i} };
+      }
+    }
+  } elsif ( $pset_str eq '0,2,5,8' ) {
+    for my $i ( keys %$pset2orig ) {
+      if ( $i == 5 or $i == 8 ) {
+        push @new_set, map { $_ + 1 } @{ $pset2orig->{$i} };
+      } else {
+        push @new_set, @{ $pset2orig->{$i} };
+      }
+    }
+  } else {
+    # XXX call "handle unknown" sub or passthrough would be a good
+    # alternatives
+    croak "unknown pitch set [$pset_str]";
+  }
+
+  @new_set = sort { $a <=> $b } @new_set;
+  return \@new_set;
+}
+
+sub _x_427_S32 {
+  my ( $pset_str, $pset2orig ) = @_;
+  my @new_set;
+
+  if ( $pset_str eq '0,3,6,8' ) {
+    for my $i ( keys %$pset2orig ) {
+      if ( $i == 6 or $i == 8 ) {
+        push @new_set, map { $_ + 1 } @{ $pset2orig->{$i} };
+      } else {
+        push @new_set, @{ $pset2orig->{$i} };
+      }
+    }
+  } elsif ( $pset_str eq '0,2,5,8' ) {
+    for my $i ( keys %$pset2orig ) {
+      if ( $i == 0 or $i == 2 ) {
+        push @new_set, map { $_ - 1 } @{ $pset2orig->{$i} };
+      } else {
+        push @new_set, @{ $pset2orig->{$i} };
+      }
+    }
+  } else {
+    # XXX call "handle unknown" sub or passthrough would be a good
+    # alternatives
+    croak "unknown pitch set [$pset_str]";
+  }
+
+  @new_set = sort { $a <=> $b } @new_set;
+  return \@new_set;
+}
+
+sub _x_427_S34 {
+  my ( $pset_str, $pset2orig ) = @_;
+  my @new_set;
+
+  if ( $pset_str eq '0,3,6,8' ) {
+    for my $i ( keys %$pset2orig ) {
+      if ( $i == 0 or $i == 8 ) {
+        push @new_set, map { $_ + 1 } @{ $pset2orig->{$i} };
+      } else {
+        push @new_set, @{ $pset2orig->{$i} };
+      }
+    }
+  } elsif ( $pset_str eq '0,2,5,8' ) {
+    for my $i ( keys %$pset2orig ) {
+      if ( $i == 0 or $i == 8 ) {
+        push @new_set, map { $_ - 1 } @{ $pset2orig->{$i} };
+      } else {
+        push @new_set, @{ $pset2orig->{$i} };
+      }
+    }
+  } else {
+    # XXX call "handle unknown" sub or passthrough would be a good
+    # alternatives
+    croak "unknown pitch set [$pset_str]";
+  }
+
+  @new_set = sort { $a <=> $b } @new_set;
+  return \@new_set;
+}
+
+sub _x_427_S43 {
+  my ( $pset_str, $pset2orig ) = @_;
+  my @new_set;
+
+  if ( $pset_str eq '0,3,6,8' ) {
+    for my $i ( keys %$pset2orig ) {
+      if ( $i == 3 or $i == 6 ) {
+        push @new_set, map { $_ - 1 } @{ $pset2orig->{$i} };
+      } else {
+        push @new_set, @{ $pset2orig->{$i} };
+      }
+    }
+  } elsif ( $pset_str eq '0,2,5,8' ) {
+    for my $i ( keys %$pset2orig ) {
+      if ( $i == 2 or $i == 5 ) {
+        push @new_set, map { $_ + 1 } @{ $pset2orig->{$i} };
+      } else {
+        push @new_set, @{ $pset2orig->{$i} };
+      }
+    }
+  } else {
+    # XXX call "handle unknown" sub or passthrough would be a good
+    # alternatives
+    croak "unknown pitch set [$pset_str]";
+  }
+
+  @new_set = sort { $a <=> $b } @new_set;
+  return \@new_set;
+}
+
+sub _x_427_S56 {
+  my ( $pset_str, $pset2orig ) = @_;
+  my @new_set;
+
+  if ( $pset_str eq '0,3,6,8' ) {
+    for my $i ( keys %$pset2orig ) {
+      if ( $i == 0 or $i == 6 ) {
+        push @new_set, map { $_ - 1 } @{ $pset2orig->{$i} };
+      } else {
+        push @new_set, @{ $pset2orig->{$i} };
+      }
+    }
+  } elsif ( $pset_str eq '0,2,5,8' ) {
+    for my $i ( keys %$pset2orig ) {
+      if ( $i == 2 or $i == 8 ) {
+        push @new_set, map { $_ + 1 } @{ $pset2orig->{$i} };
+      } else {
+        push @new_set, @{ $pset2orig->{$i} };
+      }
+    }
+  } else {
+    # XXX call "handle unknown" sub or passthrough would be a good
+    # alternatives
+    croak "unknown pitch set [$pset_str]";
+  }
+
+  @new_set = sort { $a <=> $b } @new_set;
+  return \@new_set;
+}
+
+sub _x_427_S65 {
+  my ( $pset_str, $pset2orig ) = @_;
+  my @new_set;
+
+  if ( $pset_str eq '0,3,6,8' ) {
+    for my $i ( keys %$pset2orig ) {
+      if ( $i == 3 or $i == 8 ) {
+        push @new_set, map { $_ + 1 } @{ $pset2orig->{$i} };
+      } else {
+        push @new_set, @{ $pset2orig->{$i} };
+      }
+    }
+  } elsif ( $pset_str eq '0,2,5,8' ) {
+    for my $i ( keys %$pset2orig ) {
+      if ( $i == 0 or $i == 5 ) {
+        push @new_set, map { $_ - 1 } @{ $pset2orig->{$i} };
+      } else {
+        push @new_set, @{ $pset2orig->{$i} };
+      }
+    }
+  } else {
+    # XXX call "handle unknown" sub or passthrough would be a good
+    # alternatives
+    croak "unknown pitch set [$pset_str]";
+  }
+
+  @new_set = sort { $a <=> $b } @new_set;
+  return \@new_set;
+}
+
+sub _x_427_C32 {
+  my ( $pset_str, $pset2orig ) = @_;
+  my @new_set;
+
+  if ( $pset_str eq '0,3,6,8' ) {
+    for my $i ( keys %$pset2orig ) {
+      if ( $i == 6 ) {
+        push @new_set, map { $_ - 1 } @{ $pset2orig->{$i} };
+      } elsif ( $i == 8 ) {
+        push @new_set, map { $_ + 1 } @{ $pset2orig->{$i} };
+      } else {
+        push @new_set, @{ $pset2orig->{$i} };
+      }
+    }
+  } elsif ( $pset_str eq '0,2,5,8' ) {
+    for my $i ( keys %$pset2orig ) {
+      if ( $i == 0 ) {
+        push @new_set, map { $_ - 1 } @{ $pset2orig->{$i} };
+      } elsif ( $i == 2 ) {
+        push @new_set, map { $_ + 1 } @{ $pset2orig->{$i} };
+      } else {
+        push @new_set, @{ $pset2orig->{$i} };
+      }
+    }
+  } else {
+    # XXX call "handle unknown" sub or passthrough would be a good
+    # alternatives
+    croak "unknown pitch set [$pset_str]";
+  }
+
+  @new_set = sort { $a <=> $b } @new_set;
+  return \@new_set;
+}
+
+sub _x_427_C34 {
+  my ( $pset_str, $pset2orig ) = @_;
+  my @new_set;
+
+  if ( $pset_str eq '0,3,6,8' ) {
+    for my $i ( keys %$pset2orig ) {
+      if ( $i == 0 ) {
+        push @new_set, map { $_ - 1 } @{ $pset2orig->{$i} };
+      } elsif ( $i == 8 ) {
+        push @new_set, map { $_ + 1 } @{ $pset2orig->{$i} };
+      } else {
+        push @new_set, @{ $pset2orig->{$i} };
+      }
+    }
+  } elsif ( $pset_str eq '0,2,5,8' ) {
+    for my $i ( keys %$pset2orig ) {
+      if ( $i == 0 ) {
+        push @new_set, map { $_ - 1 } @{ $pset2orig->{$i} };
+      } elsif ( $i == 8 ) {
+        push @new_set, map { $_ + 1 } @{ $pset2orig->{$i} };
+      } else {
+        push @new_set, @{ $pset2orig->{$i} };
+      }
+    }
+  } else {
+    # XXX call "handle unknown" sub or passthrough would be a good
+    # alternatives
+    croak "unknown pitch set [$pset_str]";
+  }
+
+  @new_set = sort { $a <=> $b } @new_set;
+  return \@new_set;
+}
+
+sub _x_427_C65 {
+  my ( $pset_str, $pset2orig ) = @_;
+  my @new_set;
+
+  if ( $pset_str eq '0,3,6,8' ) {
+    for my $i ( keys %$pset2orig ) {
+      if ( $i == 3 ) {
+        push @new_set, map { $_ - 1 } @{ $pset2orig->{$i} };
+      } elsif ( $i == 8 ) {
+        push @new_set, map { $_ + 1 } @{ $pset2orig->{$i} };
+      } else {
+        push @new_set, @{ $pset2orig->{$i} };
+      }
+    }
+  } elsif ( $pset_str eq '0,2,5,8' ) {
+    for my $i ( keys %$pset2orig ) {
+      if ( $i == 0 ) {
+        push @new_set, map { $_ - 1 } @{ $pset2orig->{$i} };
+      } elsif ( $i == 5 ) {
+        push @new_set, map { $_ + 1 } @{ $pset2orig->{$i} };
+      } else {
+        push @new_set, @{ $pset2orig->{$i} };
+      }
+    }
+  } else {
+    # XXX call "handle unknown" sub or passthrough would be a good
+    # alternatives
+    croak "unknown pitch set [$pset_str]";
+  }
+
+  @new_set = sort { $a <=> $b } @new_set;
+  return \@new_set;
+}
+
 # used as fall-through if set if find something do not know what to do
 # with in transform table
 sub get_default_token {
@@ -179,7 +480,7 @@ sub normalize {
     push @{ $origmap{ $p % $self->{_DEG_IN_SCALE} } }, $p;
   }
   if ( keys %origmap == 1 ) {
-    return keys %origmap, \%origmap;
+    return wantarray ? ( keys %origmap, \%origmap ) : keys %origmap;
   }
   my @nset = sort { $a <=> $b } keys %origmap;
 
@@ -235,7 +536,8 @@ sub normalize {
     %origmap = %newmap;
   }
 
-  return join( ',', @normal ), \%origmap;
+  return
+    wantarray ? ( join( ',', @normal ), \%origmap ) : join( ',', @normal );
 }
 
 sub set_default_token {
@@ -331,33 +633,39 @@ __END__
 
 =head1 NAME
 
-Music::NeoRiemannianTonnetz - performs Riemann operations on triads
+Music::NeoRiemannianTonnetz - performs Neo-Riemann operations on set classes
 
 =head1 SYNOPSIS
 
-  use Music::NeoRiemannianTonnetz;
+  use Music::NeoRiemannianTonnetz ();
   my $nrt = Music::NeoRiemannianTonnetz->new;
 
   # "parallel" changes Major to minor
-  $nrt->transform('P', [60, 64, 67]);   # [60, 63, 67]
+  $nrt->transform( 'P', [60, 64, 67] );   # [60, 63, 67]
+  $nrt->transform( 'P', [60, 63, 67] );   # [60, 64, 67]
 
+  # or multiple operations (LPR)
   my $tasks = $nrt->taskify_tokens('LPR');
-  my $new_pitch_set = $nrt->transform($tasks, [0,3,7]);
+  my $new_pitch_set = $nrt->transform($tasks, 0, 3, 7);
+
+  # Sevenths (4-27 only), e.g. F+ to C-
+  $nrt->transform( 'S34', [65,69,72,75] ); # [66,70,72,75]
+
+The L<Music::LilyPondUtil> module will assist with converting between
+lilypond note names and raw pitch numbers; this module deals with only
+the raw pitch numbers (integers).
 
 =head1 DESCRIPTION
 
-Offers a means to perform Neo-Riemannian operations (e.g. C<LPR>) on
-major and minor triads (and only those triads, at the moment). In
-theory, should be extensible to support other transformations on other
-pitch sets (e.g. 7ths, as detailed in the literature), but that would
-require more work and reading.
+Performs Neo-Riemannian operations on major and minor triads (set class
+C<3-11>), and sevenths (set class C<4-27>).
 
 This is a very new module, use with caution, things may change, etc.
 
-=head2 TRANSFORMATIONS
+=head2 TRIAD OPERATIONS
 
-Available operations (sometimes called "tokens" in this module) for the
-B<transform> method include:
+Available operations (called "tokens" in this module) for the
+B<transform> method on members of set class 3-11:
 
   P  Parallel
   R  Relative
@@ -365,6 +673,31 @@ B<transform> method include:
   N  Nebenverwandt (RLP)
   S  Slide (LPR)
   H  "hexatonic pole exchange" (LPL)
+
+=head2 SEVENTH OPERATIONS
+
+These are derived from [Childs 1998] and operate only on members of set
+class 4-27. For example, the C<S23> will convert a F+ chord C<F A C Eb>
+into F- C<F# A C E>, or a F- chord into a F+, and so forth:
+
+       F+   F-
+  S23  F-   F+
+  S32  F#-  E+
+  S34  C-   Bb+
+  S43  B-   B+
+  S56  D-   Ab+
+  S65  D#-  G+
+  C32  D+   G#-
+  C34  Ab+  D-
+  C65  B+   B-
+
+=head2 TOKEN NAMES
+
+Token names are at present defined to be upper case ASCII letters (A-Z),
+followed by zero to many lower case ASCII letters or numbers (a-z0-9).
+Tokens will not perform any changes to a pitch set unless suitable code
+is added to the transformation table (a hash of token names to CODE
+references).
 
 =head1 METHODS
 
@@ -390,21 +723,21 @@ Constructor.
 
 =over 4
 
-=item B<default_token>
+=item B<default_token> => I<tokens-or-coderef>
 
 A token to use should the B<taskify_tokens> method be unable to convert
 an element of the tasks lists to a CODE reference via the transformation
 table. The default token should either be a CODE reference or a string
 of (hopefully extant!) token names, e.g. C<RLP>.
 
-=item B<DEG_IN_SCALE>
+=item B<DEG_IN_SCALE> => I<positiveinteger>
 
 A 12-tone system is assumed, though may be changed, though I have no
 idea what that would do.
 
   Music::NeoRiemannianTonnetz->new(DEG_IN_SCALE => 17);
 
-=item B<x>
+=item B<x> => I<hashref>
 
 Hash reference to set a custom transformation table. Read the source to
 figure out what this needs to be.
@@ -416,11 +749,36 @@ figure out what this needs to be.
 Normalizes the given pitch set (a list or array reference of pitch
 numbers, which in turn should be integers) via code that is something
 like B<normal_form> of L<Music::AtonalUtil> but slightly different.
-Returns a string of the normalized pitch set (such as C<0,4,7> for a
-Major triad), and a hash reference that maps the normalized pitch set
-pitch numbers to the original pitches of the input I<pitch_set>.
+Returns in list context a string of the normalized pitch set (such as
+C<0,4,7> for a Major triad), and a hash reference that maps the
+normalized pitch set pitch numbers to the original pitches of the input
+I<pitch_set>. In scalar context, just the string of the normalized pitch
+set is returned:
 
-This method is used internally by the B<transform> method.
+  use Music::LilyPondUtil         ();
+  use Music::NeoRiemannianTonnetz ();
+  my $lyu = Music::LilyPondUtil->new;
+  my $nrt = Music::NeoRiemannianTonnetz->new;
+
+  scalar $nrt->normalize( $lyu->notes2pitches(qw/c e g/) ) # 0,4,7
+
+This method is used internally by the B<transform> method, or can be
+used to explore the C<3-11>, C<4-27>, or other arbitrary set classes:
+
+  chord        normalized  set class
+  <c e g>      [0,4,7]     3-11
+  <c ees g>    [0,3,7]     3-11
+  <f a c ees>  [0,3,6,8]   4-27
+  <fis a c e>  [0,2,5,8]   4-27
+
+Neo-Riemannian operations need this unique normalized form as the set
+class conflates these different forms into the same Forte Number
+(C<3-11>) or prime form pitch set (C<[0,3,7]>), and Neo-Riemannian
+operations must do different things depending on whether the triad is
+major or minor, or is C<[0,3,6,8]> or C<[0,2,5,8]>.
+
+There are scripts under the C<eg/> directory of the distribution of this
+module that explore the normalize/atonal prime form set space.
 
 =item B<set_default_token> I<token>
 
@@ -454,13 +812,18 @@ method first. Returns the new pitch set (as an array reference) if
 all goes well.
 
 The resulting pitch set will be ordered from lowest pitch to highest;
-Neo-Riemannian theory appears to care little about chord inversions, so
-operations will often convert root position chords between 1st or 2nd
-inversions, depending on the starting chord and operations in question.
+Neo-Riemannian theory cares little about chord inversions, and will
+convert root position chords to and from various inversions:
+
+  # C-major to F-minor (2nd inversion)
+  $nrt->transform('N', 60, 64, 67); # [60, 65, 68]
 
 =back
 
 =head1 BUGS
+
+Too much boilerplate code to apply the pitch changes, need to abstract
+out the important bits from the C<_x_*> subs.
 
 Newer versions of this module may be available from CPAN. If the bug is
 in the latest version, check:
@@ -471,29 +834,27 @@ C<techno> is not a bug, though may bug some.
 
 =head1 SEE ALSO
 
-=over 4
-
-=item *
-
-[WP] https://en.wikipedia.org/wiki/Neo-Riemannian_theory as an
+[WP] L<https://en.wikipedia.org/wiki/Neo-Riemannian_theory> as an
 introduction.
 
-=item *
+L<https://en.wikipedia.org/wiki/Forte_number> for a description of the
+C<3-11> and other set class names used in this documentation.
 
 [Cohn 1998] "Introduction to Neo-Riemannian Theory: A Survey and a
 Historical Perspective" by Richard Cohn. Journal of Music Theory, Vol.
 42, No. 2, Neo-Riemannian Theory (Autumn, 1998), pp. 167-180.
 
-And also the entire Journal of Music Theory Vol. 42, No. 2, Autumn, 1998
-publication: L<http://www.jstor.org/stable/i235025>
+[Childs 1998] "Moving beyond Neo-Riemannian Triads: Exploring a
+Transformational Model for Seventh Chords" by Adrian P. Childs. Journal
+of Music Theory, Vol. 42, No. 2, Neo-Riemannian Theory (Autumn, 1998),
+pp. 181-193.
 
-=item *
+And also the rest of the Journal of Music Theory Vol. 42, No. 2, Autumn,
+1998 publication: L<http://www.jstor.org/stable/i235025>
 
 Various other music modules by the author, for different views on music
 theory: L<Music::AtonalUtil>, L<Music::Canon>,
-L<Music::Chord::Positions>, among others.
-
-=back
+L<Music::Chord::Positions>, L<Music::LilyPondUtil>, etc.
 
 =head1 AUTHOR
 

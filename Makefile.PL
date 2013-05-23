@@ -6,7 +6,7 @@ use ExtUtils::MakeMaker;
 
 my %params = (
   NAME         => 'Music::NeoRiemannianTonnetz',
-  ABSTRACT     => 'performs Neo-Riemann operations on triads',
+  ABSTRACT     => 'performs Neo-Riemann operations on set classes',
   VERSION_FROM => 'lib/Music/NeoRiemannianTonnetz.pm',
   PREREQ_PM    => {
     Carp                => 0,

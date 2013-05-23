@@ -16,7 +16,8 @@ isa_ok( $Nrt, 'Music::NeoRiemannianTonnetz' );
 
 taskify_tokens();
 techno();
-transform();
+transform_3_11();
+transform_4_27();
 
 sub taskify_tokens {
   my $tasks = $Nrt->taskify_tokens('P');
@@ -37,7 +38,7 @@ sub techno {
   $deeply->( [ $Nrt->techno(4) ], \@even_more_techno, 'even more tonn tz' );
 }
 
-sub transform {
+sub transform_3_11 {
   # flip minor|major traids
   my $pset = $Nrt->transform( 'P', [ 60, 63, 67 ] );
   $deeply->( $pset, [ 60, 64, 67 ], 'P - minor triad to major' );
@@ -116,4 +117,99 @@ sub transform {
   );
 }
 
-plan tests => 23;
+sub transform_4_27 {
+  # Via table in [Childs 1998] p.186
+  $deeply->(
+    $Nrt->transform( 'S23', [ 65, 69, 72, 75 ] ),
+    [ 65, 68, 71, 75 ],
+    'S23 - F+ to F-'
+  );
+  $deeply->(
+    $Nrt->transform( 'S32', [ 65, 69, 72, 75 ] ),
+    [ 66, 69, 72, 76 ],
+    'S32 - F+ to F#-'
+  );
+  $deeply->(
+    $Nrt->transform( 'S34', [ 65, 69, 72, 75 ] ),
+    [ 66, 70, 72, 75 ],
+    'S34 - F+ to C-'
+  );
+  $deeply->(
+    $Nrt->transform( 'S43', [ 65, 69, 72, 75 ] ),
+    [ 65, 69, 71, 74 ],
+    'S43 - F+ to B-'
+  );
+  $deeply->(
+    $Nrt->transform( 'S56', [ 65, 69, 72, 75 ] ),
+    [ 65, 68, 72, 74 ],
+    'S56 - F+ to D-'
+  );
+  $deeply->(
+    $Nrt->transform( 'S65', [ 65, 69, 72, 75 ] ),
+    [ 66, 69, 73, 75 ],
+    'S65 - F+ to D#-'
+  );
+  $deeply->(
+    $Nrt->transform( 'C32', [ 65, 69, 72, 75 ] ),
+    [ 66, 69, 72, 74 ],
+    'C32 - F+ to D+'
+  );
+  $deeply->(
+    $Nrt->transform( 'C34', [ 65, 69, 72, 75 ] ),
+    [ 66, 68, 72, 75 ],
+    'C34 - F+ to Ab+'
+  );
+  $deeply->(
+    $Nrt->transform( 'C65', [ 65, 69, 72, 75 ] ),
+    [ 66, 69, 71, 75 ],
+    'C65 - F+ to B+'
+  );
+
+  $deeply->(
+    $Nrt->transform( 'S23', [ 65, 68, 71, 75 ] ),
+    [ 65, 69, 72, 75 ],
+    'S23 - F- to F+'
+  );
+  $deeply->(
+    $Nrt->transform( 'S32', [ 65, 68, 71, 75 ] ),
+    [ 64, 68, 71, 74 ],
+    'S32 - F- to E+'
+  );
+  $deeply->(
+    $Nrt->transform( 'S34', [ 65, 68, 71, 75 ] ),
+    [ 65, 68, 70, 74 ],
+    'S34 - F- to Bb+'
+  );
+  $deeply->(
+    $Nrt->transform( 'S43', [ 65, 68, 71, 75 ] ),
+    [ 66, 69, 71, 75 ],
+    'S43 - F- to B+'
+  );
+  $deeply->(
+    $Nrt->transform( 'S56', [ 65, 68, 71, 75 ] ),
+    [ 66, 68, 72, 75 ],
+    'S56 - F- to Ab+'
+  );
+  $deeply->(
+    $Nrt->transform( 'S65', [ 65, 68, 71, 75 ] ),
+    [ 65, 67, 71, 74 ],
+    'S65 - F- to G+'
+  );
+  $deeply->(
+    $Nrt->transform( 'C32', [ 65, 68, 71, 75 ] ),
+    [ 66, 68, 71, 74 ],
+    'C32 - F- to G#-'
+  );
+  $deeply->(
+    $Nrt->transform( 'C34', [ 65, 68, 71, 75 ] ),
+    [ 65, 68, 72, 74 ],
+    'C34 - F- to D-'
+  );
+  $deeply->(
+    $Nrt->transform( 'C65', [ 65, 68, 71, 75 ] ),
+    [ 65, 69, 71, 74 ],
+    'C65 - F- to B-'
+  );
+}
+
+plan tests => 41;
