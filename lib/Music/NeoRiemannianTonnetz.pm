@@ -14,451 +14,99 @@ use List::Util qw/min/;
 use Scalar::Util qw/reftype/;
 use Try::Tiny;
 
-our $VERSION = '0.20';
+our $VERSION = '0.21';
 
 my $DEG_IN_SCALE = 12;
 
-# for transform table, 'x'. "SEE ALSO" section in docs has links for [refs]
+# For the transform table. "SEE ALSO" section in docs has links for
+# [refs]. These are expanded as a simple grammar, until a code reference
+# is reached; the code reference then looks up what needs to be done via
+# the operations table.
 my %TRANSFORMATIONS = (
   # 3-11 operations
-  P => \&_x_parallel,          # Parallel [WP]
-  R => \&_x_relative,          # Relative [WP]
-  L => \&_x_leittonwechsel,    # Leittonwechsel [WP]
-  N => 'RLP',                  # Nebenverwandt [WP]
-  S => 'LPR',                  # Slide [WP]
-  H => 'LPL',                  # [WP]
+  P => \&_apply_operation,    # Parallel [WP]
+  R => \&_apply_operation,    # Relative [WP]
+  L => \&_apply_operation,    # Leittonwechsel [WP]
+  N => 'RLP',                 # Nebenverwandt [WP]
+  S => 'LPR',                 # Slide [WP]
+  H => 'LPL',                 # [WP]
 
   # 4-27 operations [Childs 1998]
-  S23 => \&_x_427_S23,
-  S32 => \&_x_427_S32,
-  S34 => \&_x_427_S34,
-  S43 => \&_x_427_S43,
-  S56 => \&_x_427_S56,
-  S65 => \&_x_427_S65,
-  C32 => \&_x_427_C32,
-  C34 => \&_x_427_C34,
-  C65 => \&_x_427_C65,
+  S23 => \&_apply_operation,
+  S32 => \&_apply_operation,
+  S34 => \&_apply_operation,
+  S43 => \&_apply_operation,
+  S56 => \&_apply_operation,
+  S65 => \&_apply_operation,
+  C32 => \&_apply_operation,
+  C34 => \&_apply_operation,
+  C65 => \&_apply_operation,
+);
+
+# The important bits (these munge set classes to a different form of the
+# same parent prime form of a set class, e.g. toggling 0,3,7 to 0,4,7).
+# The operation names come from the literature, as well as the magic
+# numbers required to change the set classes correctly. sadfjkdjf
+my %OPERATIONS = (
+  L => { '0,3,7' => { 7 => 1 },  '0,4,7' => { 0 => -1 } },
+  P => { '0,3,7' => { 3 => 1 },  '0,4,7' => { 4 => -1 } },
+  R => { '0,3,7' => { 0 => -2 }, '0,4,7' => { 7 => 2 } },
+  S23 =>
+    { '0,3,6,8' => { 0 => -1, 3 => -1 }, '0,2,5,8' => { 5 => 1, 8 => 1 } },
+  S32 =>
+    { '0,3,6,8' => { 6 => 1, 8 => 1 }, '0,2,5,8' => { 0 => -1, 2 => -1 } },
+  S34 =>
+    { '0,3,6,8' => { 0 => 1, 8 => 1 }, '0,2,5,8' => { 0 => -1, 8 => -1 } },
+  S43 =>
+    { '0,3,6,8' => { 3 => -1, 6 => -1 }, '0,2,5,8' => { 2 => 1, 5 => 1 } },
+  S56 =>
+    { '0,3,6,8' => { 0 => -1, 6 => -1 }, '0,2,5,8' => { 2 => 1, 8 => 1 } },
+  S65 =>
+    { '0,3,6,8' => { 3 => 1, 8 => 1 }, '0,2,5,8' => { 0 => -1, 5 => -1 } },
+  C32 =>
+    { '0,3,6,8' => { 6 => -1, 8 => 1 }, '0,2,5,8' => { 0 => -1, 2 => 1 } },
+  C34 =>
+    { '0,3,6,8' => { 0 => -1, 8 => 1 }, '0,2,5,8' => { 0 => -1, 8 => 1 } },
+  C65 =>
+    { '0,3,6,8' => { 3 => -1, 8 => 1 }, '0,2,5,8' => { 0 => -1, 5 => 1 } },
 );
 
 ########################################################################
 #
 # SUBROUTINES
 
-# These are ugly; there might be a better way to perform the operations,
-# or a more abstract module could instead ignore the operations, and
-# given a pitch set show the various other pitch sets it could mutate
-# directly to?
+sub _apply_operation {
+  my ( $self, $token, $pset_str, $pset2orig ) = @_;
 
-# 3-11 operations
-sub _x_leittonwechsel {
-  my ( $pset_str, $pset2orig ) = @_;
+  if ( !exists $self->{op}->{$token}->{$pset_str} ) {
+    croak "no set class [$pset_str] for token '$token'";
+  }
+
+  # apply pitch modifications from the operations table
+  for my $i ( keys %{ $self->{op}->{$token}->{$pset_str} } ) {
+    for my $p ( @{ $pset2orig->{$i} } ) {
+      $p += $self->{op}->{$token}->{$pset_str}->{$i};
+    }
+  }
+
+  # reformulate the (updated) original pitches into new pitch set
   my @new_set;
-
-  if ( $pset_str eq '0,3,7' ) {
-    # minor - 5th up by semitone
-    for my $i ( keys %$pset2orig ) {
-      if ( $i == 7 ) {
-        push @new_set, map { $_ + 1 } @{ $pset2orig->{$i} };
-      } else {
-        push @new_set, @{ $pset2orig->{$i} };
-      }
-    }
-  } elsif ( $pset_str eq '0,4,7' ) {
-    # major - root moves down semitone
-    for my $i ( keys %$pset2orig ) {
-      if ( $i == 0 ) {
-        push @new_set, map { $_ - 1 } @{ $pset2orig->{$i} };
-      } else {
-        push @new_set, @{ $pset2orig->{$i} };
-      }
-    }
-  } else {
-    # XXX call "handle unknown" sub or passthrough would be a good
-    # alternatives
-    croak "unknown pitch set [$pset_str]";
+  for my $r ( values $pset2orig ) {
+    push @new_set, @$r;
   }
 
   @new_set = sort { $a <=> $b } @new_set;
   return \@new_set;
 }
-
-sub _x_parallel {
-  my ( $pset_str, $pset2orig ) = @_;
-  my @new_set;
-
-  if ( $pset_str eq '0,3,7' ) {
-    # minor - Major the 3rd
-    for my $i ( keys %$pset2orig ) {
-      if ( $i == 3 ) {
-        push @new_set, map { $_ + 1 } @{ $pset2orig->{$i} };
-      } else {
-        push @new_set, @{ $pset2orig->{$i} };
-      }
-    }
-  } elsif ( $pset_str eq '0,4,7' ) {
-    # Major - major the 3rd
-    for my $i ( keys %$pset2orig ) {
-      if ( $i == 4 ) {
-        push @new_set, map { $_ - 1 } @{ $pset2orig->{$i} };
-      } else {
-        push @new_set, @{ $pset2orig->{$i} };
-      }
-    }
-  } else {
-    # XXX call "handle unknown" sub or passthrough would be a good
-    # alternatives
-    croak "unknown pitch set [$pset_str]";
-  }
-
-  @new_set = sort { $a <=> $b } @new_set;
-  return \@new_set;
-}
-
-sub _x_relative {
-  my ( $pset_str, $pset2orig ) = @_;
-  my @new_set;
-
-  if ( $pset_str eq '0,3,7' ) {
-    # minor - move root down a tone
-    for my $i ( keys %$pset2orig ) {
-      if ( $i == 0 ) {
-        push @new_set, map { $_ - 2 } @{ $pset2orig->{$i} };
-      } else {
-        push @new_set, @{ $pset2orig->{$i} };
-      }
-    }
-  } elsif ( $pset_str eq '0,4,7' ) {
-    # major - move 5th up a tone
-    for my $i ( keys %$pset2orig ) {
-      if ( $i == 7 ) {
-        push @new_set, map { $_ + 2 } @{ $pset2orig->{$i} };
-      } else {
-        push @new_set, @{ $pset2orig->{$i} };
-      }
-    }
-  } else {
-    # XXX call "handle unknown" sub or passthrough would be a good
-    # alternatives
-    croak "unknown pitch set [$pset_str]";
-  }
-
-  @new_set = sort { $a <=> $b } @new_set;
-  return \@new_set;
-}
-
-# 4-27 operations
-sub _x_427_S23 {
-  my ( $pset_str, $pset2orig ) = @_;
-  my @new_set;
-
-  if ( $pset_str eq '0,3,6,8' ) {
-    for my $i ( keys %$pset2orig ) {
-      if ( $i == 0 or $i == 3 ) {
-        push @new_set, map { $_ - 1 } @{ $pset2orig->{$i} };
-      } else {
-        push @new_set, @{ $pset2orig->{$i} };
-      }
-    }
-  } elsif ( $pset_str eq '0,2,5,8' ) {
-    for my $i ( keys %$pset2orig ) {
-      if ( $i == 5 or $i == 8 ) {
-        push @new_set, map { $_ + 1 } @{ $pset2orig->{$i} };
-      } else {
-        push @new_set, @{ $pset2orig->{$i} };
-      }
-    }
-  } else {
-    # XXX call "handle unknown" sub or passthrough would be a good
-    # alternatives
-    croak "unknown pitch set [$pset_str]";
-  }
-
-  @new_set = sort { $a <=> $b } @new_set;
-  return \@new_set;
-}
-
-sub _x_427_S32 {
-  my ( $pset_str, $pset2orig ) = @_;
-  my @new_set;
-
-  if ( $pset_str eq '0,3,6,8' ) {
-    for my $i ( keys %$pset2orig ) {
-      if ( $i == 6 or $i == 8 ) {
-        push @new_set, map { $_ + 1 } @{ $pset2orig->{$i} };
-      } else {
-        push @new_set, @{ $pset2orig->{$i} };
-      }
-    }
-  } elsif ( $pset_str eq '0,2,5,8' ) {
-    for my $i ( keys %$pset2orig ) {
-      if ( $i == 0 or $i == 2 ) {
-        push @new_set, map { $_ - 1 } @{ $pset2orig->{$i} };
-      } else {
-        push @new_set, @{ $pset2orig->{$i} };
-      }
-    }
-  } else {
-    # XXX call "handle unknown" sub or passthrough would be a good
-    # alternatives
-    croak "unknown pitch set [$pset_str]";
-  }
-
-  @new_set = sort { $a <=> $b } @new_set;
-  return \@new_set;
-}
-
-sub _x_427_S34 {
-  my ( $pset_str, $pset2orig ) = @_;
-  my @new_set;
-
-  if ( $pset_str eq '0,3,6,8' ) {
-    for my $i ( keys %$pset2orig ) {
-      if ( $i == 0 or $i == 8 ) {
-        push @new_set, map { $_ + 1 } @{ $pset2orig->{$i} };
-      } else {
-        push @new_set, @{ $pset2orig->{$i} };
-      }
-    }
-  } elsif ( $pset_str eq '0,2,5,8' ) {
-    for my $i ( keys %$pset2orig ) {
-      if ( $i == 0 or $i == 8 ) {
-        push @new_set, map { $_ - 1 } @{ $pset2orig->{$i} };
-      } else {
-        push @new_set, @{ $pset2orig->{$i} };
-      }
-    }
-  } else {
-    # XXX call "handle unknown" sub or passthrough would be a good
-    # alternatives
-    croak "unknown pitch set [$pset_str]";
-  }
-
-  @new_set = sort { $a <=> $b } @new_set;
-  return \@new_set;
-}
-
-sub _x_427_S43 {
-  my ( $pset_str, $pset2orig ) = @_;
-  my @new_set;
-
-  if ( $pset_str eq '0,3,6,8' ) {
-    for my $i ( keys %$pset2orig ) {
-      if ( $i == 3 or $i == 6 ) {
-        push @new_set, map { $_ - 1 } @{ $pset2orig->{$i} };
-      } else {
-        push @new_set, @{ $pset2orig->{$i} };
-      }
-    }
-  } elsif ( $pset_str eq '0,2,5,8' ) {
-    for my $i ( keys %$pset2orig ) {
-      if ( $i == 2 or $i == 5 ) {
-        push @new_set, map { $_ + 1 } @{ $pset2orig->{$i} };
-      } else {
-        push @new_set, @{ $pset2orig->{$i} };
-      }
-    }
-  } else {
-    # XXX call "handle unknown" sub or passthrough would be a good
-    # alternatives
-    croak "unknown pitch set [$pset_str]";
-  }
-
-  @new_set = sort { $a <=> $b } @new_set;
-  return \@new_set;
-}
-
-sub _x_427_S56 {
-  my ( $pset_str, $pset2orig ) = @_;
-  my @new_set;
-
-  if ( $pset_str eq '0,3,6,8' ) {
-    for my $i ( keys %$pset2orig ) {
-      if ( $i == 0 or $i == 6 ) {
-        push @new_set, map { $_ - 1 } @{ $pset2orig->{$i} };
-      } else {
-        push @new_set, @{ $pset2orig->{$i} };
-      }
-    }
-  } elsif ( $pset_str eq '0,2,5,8' ) {
-    for my $i ( keys %$pset2orig ) {
-      if ( $i == 2 or $i == 8 ) {
-        push @new_set, map { $_ + 1 } @{ $pset2orig->{$i} };
-      } else {
-        push @new_set, @{ $pset2orig->{$i} };
-      }
-    }
-  } else {
-    # XXX call "handle unknown" sub or passthrough would be a good
-    # alternatives
-    croak "unknown pitch set [$pset_str]";
-  }
-
-  @new_set = sort { $a <=> $b } @new_set;
-  return \@new_set;
-}
-
-sub _x_427_S65 {
-  my ( $pset_str, $pset2orig ) = @_;
-  my @new_set;
-
-  if ( $pset_str eq '0,3,6,8' ) {
-    for my $i ( keys %$pset2orig ) {
-      if ( $i == 3 or $i == 8 ) {
-        push @new_set, map { $_ + 1 } @{ $pset2orig->{$i} };
-      } else {
-        push @new_set, @{ $pset2orig->{$i} };
-      }
-    }
-  } elsif ( $pset_str eq '0,2,5,8' ) {
-    for my $i ( keys %$pset2orig ) {
-      if ( $i == 0 or $i == 5 ) {
-        push @new_set, map { $_ - 1 } @{ $pset2orig->{$i} };
-      } else {
-        push @new_set, @{ $pset2orig->{$i} };
-      }
-    }
-  } else {
-    # XXX call "handle unknown" sub or passthrough would be a good
-    # alternatives
-    croak "unknown pitch set [$pset_str]";
-  }
-
-  @new_set = sort { $a <=> $b } @new_set;
-  return \@new_set;
-}
-
-sub _x_427_C32 {
-  my ( $pset_str, $pset2orig ) = @_;
-  my @new_set;
-
-  if ( $pset_str eq '0,3,6,8' ) {
-    for my $i ( keys %$pset2orig ) {
-      if ( $i == 6 ) {
-        push @new_set, map { $_ - 1 } @{ $pset2orig->{$i} };
-      } elsif ( $i == 8 ) {
-        push @new_set, map { $_ + 1 } @{ $pset2orig->{$i} };
-      } else {
-        push @new_set, @{ $pset2orig->{$i} };
-      }
-    }
-  } elsif ( $pset_str eq '0,2,5,8' ) {
-    for my $i ( keys %$pset2orig ) {
-      if ( $i == 0 ) {
-        push @new_set, map { $_ - 1 } @{ $pset2orig->{$i} };
-      } elsif ( $i == 2 ) {
-        push @new_set, map { $_ + 1 } @{ $pset2orig->{$i} };
-      } else {
-        push @new_set, @{ $pset2orig->{$i} };
-      }
-    }
-  } else {
-    # XXX call "handle unknown" sub or passthrough would be a good
-    # alternatives
-    croak "unknown pitch set [$pset_str]";
-  }
-
-  @new_set = sort { $a <=> $b } @new_set;
-  return \@new_set;
-}
-
-sub _x_427_C34 {
-  my ( $pset_str, $pset2orig ) = @_;
-  my @new_set;
-
-  if ( $pset_str eq '0,3,6,8' ) {
-    for my $i ( keys %$pset2orig ) {
-      if ( $i == 0 ) {
-        push @new_set, map { $_ - 1 } @{ $pset2orig->{$i} };
-      } elsif ( $i == 8 ) {
-        push @new_set, map { $_ + 1 } @{ $pset2orig->{$i} };
-      } else {
-        push @new_set, @{ $pset2orig->{$i} };
-      }
-    }
-  } elsif ( $pset_str eq '0,2,5,8' ) {
-    for my $i ( keys %$pset2orig ) {
-      if ( $i == 0 ) {
-        push @new_set, map { $_ - 1 } @{ $pset2orig->{$i} };
-      } elsif ( $i == 8 ) {
-        push @new_set, map { $_ + 1 } @{ $pset2orig->{$i} };
-      } else {
-        push @new_set, @{ $pset2orig->{$i} };
-      }
-    }
-  } else {
-    # XXX call "handle unknown" sub or passthrough would be a good
-    # alternatives
-    croak "unknown pitch set [$pset_str]";
-  }
-
-  @new_set = sort { $a <=> $b } @new_set;
-  return \@new_set;
-}
-
-sub _x_427_C65 {
-  my ( $pset_str, $pset2orig ) = @_;
-  my @new_set;
-
-  if ( $pset_str eq '0,3,6,8' ) {
-    for my $i ( keys %$pset2orig ) {
-      if ( $i == 3 ) {
-        push @new_set, map { $_ - 1 } @{ $pset2orig->{$i} };
-      } elsif ( $i == 8 ) {
-        push @new_set, map { $_ + 1 } @{ $pset2orig->{$i} };
-      } else {
-        push @new_set, @{ $pset2orig->{$i} };
-      }
-    }
-  } elsif ( $pset_str eq '0,2,5,8' ) {
-    for my $i ( keys %$pset2orig ) {
-      if ( $i == 0 ) {
-        push @new_set, map { $_ - 1 } @{ $pset2orig->{$i} };
-      } elsif ( $i == 5 ) {
-        push @new_set, map { $_ + 1 } @{ $pset2orig->{$i} };
-      } else {
-        push @new_set, @{ $pset2orig->{$i} };
-      }
-    }
-  } else {
-    # XXX call "handle unknown" sub or passthrough would be a good
-    # alternatives
-    croak "unknown pitch set [$pset_str]";
-  }
-
-  @new_set = sort { $a <=> $b } @new_set;
-  return \@new_set;
-}
-
-# used as fall-through if set if find something do not know what to do
-# with in transform table
-sub get_default_token {
-  my ($self) = @_;
-  if ( !exists $self->{default_token} ) {
-    croak 'default_token has not been set';
-  }
-  return $self->{default_token};
-}
-
-# Transform table, 'x'
-sub get_x_table { $_[0]->{x} }
 
 sub new {
   my ( $class, %param ) = @_;
-  my $self = { x => \%TRANSFORMATIONS };
-
-  if ( exists $param{default_token} ) {
-    $self->{default_token} = $param{default_token};
-  }
+  my $self = { op => \%OPERATIONS, x => \%TRANSFORMATIONS };
 
   # should not need to alter, but who knows
   $self->{_DEG_IN_SCALE} = int( $param{DEG_IN_SCALE} // $DEG_IN_SCALE );
   if ( $self->{_DEG_IN_SCALE} < 2 ) {
     croak 'degrees in scale must be greater than one';
-  }
-
-  if ( exists $param{x} ) {
-    croak 'x must be hash reference' unless ref $param{x} eq 'HASH';
-    $self->{x} = $param{x};
   }
 
   bless $self, $class;
@@ -540,24 +188,6 @@ sub normalize {
     wantarray ? ( join( ',', @normal ), \%origmap ) : join( ',', @normal );
 }
 
-sub set_default_token {
-  my ( $self, $token ) = @_;
-  if ( !defined $token ) {
-    delete $self->{default_token};
-  } else {
-    $self->{default_token} = $token;
-  }
-  return $self;
-}
-
-sub set_x_table {
-  my ( $self, $table ) = @_;
-  croak 'transformation table must be hash reference'
-    unless ref $table eq 'HASH';
-  $self->{x} = $table;
-  return $self;
-}
-
 # Turns string of tokens (e.g. 'RLP') into a list of tasks (CODE refs,
 # or more strings, which are recursed on until CODE refs or error).
 # Returns array reference of such tasks. Called by transform() if user
@@ -574,7 +204,7 @@ sub taskify_tokens {
   for my $t (@$tokens) {
     if ( exists $self->{x}{$t} ) {
       if ( ref $self->{x}{$t} eq 'CODE' ) {
-        push @$tasks, $self->{x}{$t};
+        push @$tasks, [ $t, $self->{x}{$t} ];
       } elsif ( !defined reftype $self->{x}{$t}
         or ref $self->{x}{$t} eq 'ARRAY' ) {
         $self->taskify_tokens( $self->{x}{$t}, $tasks );
@@ -582,23 +212,10 @@ sub taskify_tokens {
         croak 'unknown token in transformation table';
       }
     } else {
-      if ( exists $self->{default_token} ) {
-        if (!defined reftype $self->{default_token}
-          or ref $self->{default_token} eq 'ARRAY' ) {
-          $self->taskify_tokens( $self->{default_token}, $tasks );
-        } elsif ( ref $self->{default_token} eq 'CODE' ) {
-          push @$tasks, $self->{default_token};
-        } else {
-          croak 'unknown default_token';
-        }
-      } else {
-        croak "unimplemented transformation token '$t'";
-      }
+      croak "unimplemented transformation token '$t'";
     }
   }
 
-  # TODO include the name of the operation in the list, so that is
-  # available? would need return list of hash refs or something
   return $tasks;
 }
 
@@ -620,11 +237,16 @@ sub transform {
     try { $tasks = $self->taskify_tokens($tokens) } catch { croak $_ };
   }
 
-  my $new_pset = [@$pset];
-  for my $task (@$tasks) {
-    $new_pset = $task->( $self->normalize($new_pset) );
+  my $new_pset = $pset;
+  try {
+    for my $task (@$tasks) {
+      $new_pset =
+        $task->[1]->( $self, $task->[0], $self->normalize($new_pset) );
+    }
   }
-
+  catch {
+    croak $_;
+  };
   return $new_pset;
 }
 
@@ -708,27 +330,11 @@ transformations.
 
 =over 4
 
-=item B<get_default_token>
-
-Returns the default token, or otherwise throws an error if that has
-not been set.
-
-=item B<get_x_table>
-
-Returns the transformation table, a hash reference.
-
 =item B<new> I<parameter_pairs ...>
 
 Constructor.
 
 =over 4
-
-=item B<default_token> => I<tokens-or-coderef>
-
-A token to use should the B<taskify_tokens> method be unable to convert
-an element of the tasks lists to a CODE reference via the transformation
-table. The default token should either be a CODE reference or a string
-of (hopefully extant!) token names, e.g. C<RLP>.
 
 =item B<DEG_IN_SCALE> => I<positiveinteger>
 
@@ -736,11 +342,6 @@ A 12-tone system is assumed, though may be changed, though I have no
 idea what that would do.
 
   Music::NeoRiemannianTonnetz->new(DEG_IN_SCALE => 17);
-
-=item B<x> => I<hashref>
-
-Hash reference to set a custom transformation table. Read the source to
-figure out what this needs to be.
 
 =back
 
@@ -780,16 +381,6 @@ major or minor, or is C<[0,3,6,8]> or C<[0,2,5,8]>.
 There are scripts under the C<eg/> directory of the distribution of this
 module that explore the normalize/atonal prime form set space.
 
-=item B<set_default_token> I<token>
-
-Sets the default token. See the B<default_token> parameter docs to the
-B<new> method for details. Returns the object, so can be chained.
-
-=item B<set_x_table> I<hashref>
-
-Sets the transformation table. See source, etc. Returns the object, so
-can be chained.
-
 =item B<taskify_tokens> I<tokens>, [ I<tasks> ]
 
 Converts tokens (a string such as C<RLP> (three tokens, C<R>, C<L>, and
@@ -821,9 +412,6 @@ convert root position chords to and from various inversions:
 =back
 
 =head1 BUGS
-
-Too much boilerplate code to apply the pitch changes, need to abstract
-out the important bits from the C<_x_*> subs.
 
 Newer versions of this module may be available from CPAN. If the bug is
 in the latest version, check:
