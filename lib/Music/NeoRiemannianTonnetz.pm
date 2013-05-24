@@ -14,7 +14,7 @@ use List::Util qw/min/;
 use Scalar::Util qw/reftype/;
 use Try::Tiny;
 
-our $VERSION = '0.21';
+our $VERSION = '0.22';
 
 my $DEG_IN_SCALE = 12;
 
@@ -46,7 +46,7 @@ my %TRANSFORMATIONS = (
 # The important bits (these munge set classes to a different form of the
 # same parent prime form of a set class, e.g. toggling 0,3,7 to 0,4,7).
 # The operation names come from the literature, as well as the magic
-# numbers required to change the set classes correctly. sadfjkdjf
+# numbers required to change the set classes correctly.
 my %OPERATIONS = (
   L => { '0,3,7' => { 7 => 1 },  '0,4,7' => { 0 => -1 } },
   P => { '0,3,7' => { 3 => 1 },  '0,4,7' => { 4 => -1 } },
@@ -91,7 +91,7 @@ sub _apply_operation {
 
   # reformulate the (updated) original pitches into new pitch set
   my @new_set;
-  for my $r ( values $pset2orig ) {
+  for my $r ( values %$pset2orig ) {
     push @new_set, @$r;
   }
 
