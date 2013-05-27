@@ -21,10 +21,11 @@ requires:
   Carp: 0
   List::Util: 0
   Scalar::Util: 0
+  Test::Exception: 0
   Test::More: 0
   Try::Tiny: 0
 resources:
   homepage: http://github.com/thrig/Music-NeoRiemannianTonnetz
   license: http://dev.perl.org/licenses/
   repository: http://github.com/thrig/Music-NeoRiemannianTonnetz
-version: 0.22
+version: 0.23

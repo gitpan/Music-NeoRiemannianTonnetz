@@ -9,11 +9,12 @@ my %params = (
   ABSTRACT     => 'performs Neo-Riemann operations on set classes',
   VERSION_FROM => 'lib/Music/NeoRiemannianTonnetz.pm',
   PREREQ_PM    => {
-    Carp                => 0,
-    'List::Util'        => 0,
-    'Scalar::Util'      => 0,
-    'Test::More'        => 0,
-    'Try::Tiny'         => 0,
+    Carp              => 0,
+    'List::Util'      => 0,
+    'Scalar::Util'    => 0,
+    'Test::Exception' => 0,
+    'Test::More'      => 0,
+    'Try::Tiny'       => 0,
   },
   ( $] >= 5.005
     ? ( AUTHOR => 'Jeremy Mates <jmates@cpan.org>' )

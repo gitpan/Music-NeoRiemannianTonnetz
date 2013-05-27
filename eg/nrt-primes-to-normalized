@@ -5,6 +5,11 @@
 # where there are two normalized forms for a given prime form) and
 # those that have no such possibility (within the scope of that prime
 # form set).
+#
+# (This will take some time to complete; farming the calculations out to
+# multiple processes or systems would doubtless speed things up; or,
+# feed all possible prime forms to the `nrt-study-setclass` program and
+# it should tell you whether or not the set class is suitable.)
 
 use strict;
 use warnings;

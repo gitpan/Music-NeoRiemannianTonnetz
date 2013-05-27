@@ -14,7 +14,7 @@ use List::Util qw/min/;
 use Scalar::Util qw/reftype/;
 use Try::Tiny;
 
-our $VERSION = '0.22';
+our $VERSION = '0.23';
 
 my $DEG_IN_SCALE = 12;
 
@@ -284,7 +284,7 @@ C<3-11>), and sevenths (set class C<4-27>).
 
 This is a very new module, use with caution, things may change, etc.
 
-=head2 TRIAD OPERATIONS
+=head2 TRIAD OPERATIONS (3-11)
 
 Available operations (called "tokens" in this module) for the
 B<transform> method on members of set class 3-11:
@@ -296,13 +296,14 @@ B<transform> method on members of set class 3-11:
   S  Slide (LPR)
   H  "hexatonic pole exchange" (LPL)
 
-=head2 SEVENTH OPERATIONS
+=head2 SEVENTH OPERATIONS (4-27)
 
 These are derived from [Childs 1998] and operate only on members of set
 class 4-27. For example, the C<S23> will convert a F+ chord C<F A C Eb>
 into F- C<F# A C E>, or a F- chord into a F+, and so forth:
 
        F+   F-
+  ----------------
   S23  F-   F+
   S32  F#-  E+
   S34  C-   Bb+
@@ -313,6 +314,12 @@ into F- C<F# A C E>, or a F- chord into a F+, and so forth:
   C34  Ab+  D-
   C65  B+   B-
 
+These always change two notes while holding the other two invariant;
+there is also a 10th (here unnamed) operation that holds three pitches
+invariant e.g. F+ C<[0,3,5,9]> to A- C<[0,3,7,9]>. But there is no
+network of changes while holding three invariant, only toggling between
+one or the other of two chords.
+
 =head2 TOKEN NAMES
 
 Token names are at present defined to be upper case ASCII letters (A-Z),
@@ -320,6 +327,15 @@ followed by zero to many lower case ASCII letters or numbers (a-z0-9).
 Tokens will not perform any changes to a pitch set unless suitable code
 is added to the transformation table (a hash of token names to CODE
 references).
+
+=head2 EXTENSION TO ARBITRARY SET CLASSES
+
+Most operations on most set classes are undefined. Use the
+C<eg/nrt-study-setclass> program under the distribution of this module
+to graph arbitrary set classes. Otherwise, software exploiting links
+between related forms of a set class would not need to know the name
+of the link being followed (but humans might to help analyze what is
+going on).
 
 =head1 METHODS
 
