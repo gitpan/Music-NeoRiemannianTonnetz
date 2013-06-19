@@ -14,7 +14,7 @@ use List::Util qw/min/;
 use Scalar::Util qw/reftype/;
 use Try::Tiny;
 
-our $VERSION = '0.23';
+our $VERSION = '0.24';
 
 my $DEG_IN_SCALE = 12;
 

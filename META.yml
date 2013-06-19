@@ -24,8 +24,9 @@ requires:
   Test::Exception: 0
   Test::More: 0
   Try::Tiny: 0
+  perl: 5.01
 resources:
   homepage: http://github.com/thrig/Music-NeoRiemannianTonnetz
   license: http://dev.perl.org/licenses/
   repository: http://github.com/thrig/Music-NeoRiemannianTonnetz
-version: 0.23
+version: 0.24
