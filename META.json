@@ -4,9 +4,9 @@
       "Jeremy Mates <jmates@cpan.org>"
    ],
    "dynamic_config" : 1,
-   "generated_by" : "ExtUtils::MakeMaker version 6.64, CPAN::Meta::Converter version 2.120921",
+   "generated_by" : "ExtUtils::MakeMaker version 6.6302, CPAN::Meta::Converter version 2.120921",
    "license" : [
-      "perl_5"
+      "unknown"
    ],
    "meta-spec" : {
       "url" : "http://search.cpan.org/perldoc?CPAN::Meta::Spec",
@@ -52,5 +52,5 @@
          "url" : "http://github.com/thrig/Music-NeoRiemannianTonnetz"
       }
    },
-   "version" : "0.24"
+   "version" : "0.25"
 }

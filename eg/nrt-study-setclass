@@ -32,8 +32,6 @@ use Music::AtonalUtil           ();
 use Music::LilyPondUtil         ();
 use Music::NeoRiemannianTonnetz ();
 
-my $FORTE_NUMBER_RE = qr/[3-9]-[zZ]?\d{1,2}/;
-
 my $atu = Music::AtonalUtil->new;
 my $lyu = Music::LilyPondUtil->new(
   ignore_register => 1,
@@ -41,6 +39,8 @@ my $lyu = Music::LilyPondUtil->new(
   mode            => 'relative',
 );
 my $nrt = Music::NeoRiemannianTonnetz->new;
+
+my $FORTE_NUMBER_RE = $atu->forte_number_re;
 
 GetOptions(
   'exclusive|E' => \my $Flag_Exclusive,
